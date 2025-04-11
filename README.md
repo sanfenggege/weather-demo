@@ -32,7 +32,7 @@
 1. 克隆项目仓库
 
 ```bash
-git clone https://github.com/your-repo/weather-app.git
+git clone git@github.com:sanfenggege/weather-demo.git
 cd weather-app
 ```plaintext
 
