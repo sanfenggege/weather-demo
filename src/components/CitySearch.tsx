@@ -23,11 +23,15 @@ const CitySearch: React.FC<CitySearchProps> = ({ handleLocationSelect }) => {
     debounceTimer.current = setTimeout(() => {
       if (value.length > 1) {
         fetchLocationSuggestions(value);
-      } else {
-        clearLocationSuggestions();
       }
     }, 500);
   };
+
+  const handleLocationChange = (location: ILocationData) => {
+    setCity(`${location.adm2}, ${location.adm1}`);
+    clearLocationSuggestions();
+    handleLocationSelect(location);
+  }
 
   return (
     <div className="search-container">
@@ -43,10 +47,7 @@ const CitySearch: React.FC<CitySearchProps> = ({ handleLocationSelect }) => {
           {locationSuggestions.map((location, index) => (
             <li
               key={index}
-              onClick={() => {
-                clearLocationSuggestions();
-                handleLocationSelect(location);
-              }}
+              onClick={() => handleLocationChange(location)}
               className="suggestion-item"
             >
               {location.adm2}, {location.adm1}

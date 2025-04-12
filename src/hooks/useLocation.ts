@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import axios from 'axios';
 import { ILocationData } from '../types';
 
@@ -32,7 +32,12 @@ const useLocation = () => {
     setLocationSuggestions([]);
   }
 
-  return { locationSuggestions, fetchLocationSuggestions, clearLocationSuggestions };
+  const actions = useMemo(() => ({
+    fetchLocationSuggestions,
+    clearLocationSuggestions
+  }), []);
+
+  return { locationSuggestions, ...actions };
 }
 
 export default useLocation;
