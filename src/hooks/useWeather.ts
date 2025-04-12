@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { IWeatherData } from '../types';
 
@@ -9,7 +9,7 @@ const useWeather = (initialCity: string) => {
   const [weatherData, setWeatherData] = useState<IWeatherData[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchWeatherData = async (locationId: string) => {
+  const fetchWeatherDataHandle = async (locationId: string) => {
     setError(null);
     try {
       const response = await axios.get(
@@ -31,6 +31,8 @@ const useWeather = (initialCity: string) => {
       console.error('获取天气数据失败:', err);
     }
   };
+
+  const fetchWeatherData = useCallback((locationId: string) => { fetchWeatherDataHandle(locationId); }, []);
 
   useEffect(() => {
     fetchWeatherData(initialCity);

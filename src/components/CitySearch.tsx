@@ -21,7 +21,7 @@ const CitySearch: React.FC<CitySearchProps> = ({ handleLocationSelect }) => {
     }
 
     debounceTimer.current = setTimeout(() => {
-      if (value.length > 1) {
+      if (value.length >= 1) {
         fetchLocationSuggestions(value);
       }
     }, 500);
