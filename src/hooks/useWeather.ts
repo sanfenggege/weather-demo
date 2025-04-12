@@ -1,45 +1,92 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import axios, { CancelTokenSource } from 'axios';
 import { IWeatherData } from '../types';
 
-const API_HOST = import.meta.env.VITE_HEWEATHER_API_HOST;
-const API_TOKEN = import.meta.env.VITE_HEWEATHER_TOKEN;
+const WEATHER_API_CONFIG = {
+  HOST: import.meta.env.VITE_HEWEATHER_API_HOST,
+  TOKEN: import.meta.env.VITE_HEWEATHER_TOKEN,
+  ENDPOINTS: {
+    WEATHER_7D: '/v7/weather/7d',
+  },
+};
+
+interface IWeatherApiResponse {
+  code: string;
+  daily?: IWeatherData[];
+  message?: string;
+}
 
 const useWeather = (initialCity: string) => {
   const [weatherData, setWeatherData] = useState<IWeatherData[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const cancelTokenSource = useRef<CancelTokenSource | null>(null);
 
-  const fetchWeatherDataHandle = async (locationId: string) => {
-    setError(null);
+  const fetchWeatherData = useCallback(async (locationId: string) => {
+    if (!locationId) {
+      setError('位置ID不能为空');
+      return;
+    }
+
+    if (cancelTokenSource.current) {
+      cancelTokenSource.current.cancel('Operation canceled due to new request');
+    }
+
     try {
-      const response = await axios.get(
-        `${API_HOST}/v7/weather/7d?location=${locationId}`,
+      setIsLoading(true);
+      setError(null);
+
+      cancelTokenSource.current = axios.CancelToken.source();
+
+      const response = await axios.get<IWeatherApiResponse>(
+        `${WEATHER_API_CONFIG.HOST}${WEATHER_API_CONFIG.ENDPOINTS.WEATHER_7D}`,
         {
+          params: { location: locationId },
           headers: {
-            'Authorization': `Bearer ${API_TOKEN}`
-          }
+            'Authorization': `Bearer ${WEATHER_API_CONFIG.TOKEN}`
+          },
+          cancelToken: cancelTokenSource.current.token
         }
       );
 
-      if (response.data.code === '200') {
+      if (response.data.code === '200' && response.data.daily) {
         setWeatherData(response.data.daily);
       } else {
-        setError('获取天气数据失败: ' + response.data.code);
+        setError(response.data.message || `获取天气数据失败: ${response.data.code}`);
+        setWeatherData([]);
       }
     } catch (err) {
-      setError('获取天气数据失败，请稍后重试');
-      console.error('获取天气数据失败:', err);
+      if (!axios.isCancel(err)) {
+        const errorMessage = axios.isAxiosError(err)
+          ? '网络错误，请检查连接'
+          : '获取天气数据失败，请稍后重试';
+
+        setError(errorMessage);
+        console.error('获取天气数据失败:', err);
+      }
+    } finally {
+      setIsLoading(false);
     }
-  };
-
-  const fetchWeatherData = useCallback((locationId: string) => { fetchWeatherDataHandle(locationId); }, []);
-
-  useEffect(() => {
-    fetchWeatherData(initialCity);
-    return () => { };
   }, []);
 
-  return { weatherData, error, fetchWeatherData };
+  useEffect(() => {
+    if (initialCity) {
+      fetchWeatherData(initialCity);
+    }
+
+    return () => {
+      if (cancelTokenSource.current) {
+        cancelTokenSource.current.cancel('Component unmounted');
+      }
+    };
+  }, [initialCity, fetchWeatherData]);
+
+  return {
+    weatherData,
+    error,
+    isLoading,
+    fetchWeatherData
+  };
 }
 
 export default useWeather;

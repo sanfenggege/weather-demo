@@ -1,17 +1,19 @@
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useCallback } from 'react';
 import './App.css';
-import { ILocationData } from './types';
+import { ILocationData, IWeatherData } from './types';
 import useWeather from './hooks/useWeather';
 import WeatherCard from './components/WeatherCard';
 import CitySearch from './components/CitySearch';
 
+const DEFAULT_CITY: ILocationData = {
+  name: '上海',
+  id: '101020100',
+  adm2: '上海',
+  adm1: '上海'
+};
+
 const App: React.FC = () => {
-  const [selectedLocation, setSelectedLocation] = useState<ILocationData>({
-    name: '上海',
-    id: '101020100',
-    adm2: '上海',
-    adm1: '上海'
-  });
+  const [selectedLocation, setSelectedLocation] = useState<ILocationData>(DEFAULT_CITY);
 
   const { weatherData, error, fetchWeatherData } = useWeather(selectedLocation.id);
 
@@ -19,6 +21,15 @@ const App: React.FC = () => {
     setSelectedLocation(location);
     fetchWeatherData(location.id);
   };
+
+  const renderWeatherCards = useCallback((data: IWeatherData[]) => (
+    data.map((day) => (
+      <WeatherCard
+        key={`${day.fxDate}-${selectedLocation.id}`}
+        day={day}
+      />
+    ))
+  ), [selectedLocation.id]);
 
   return (
     <div className="app">
@@ -29,9 +40,7 @@ const App: React.FC = () => {
           <>
             <h2>{selectedLocation.adm2}, {selectedLocation.adm1}</h2>
             <div className="weather-container">
-              {weatherData.map((day, index) => (
-                <WeatherCard key={index} day={day} />
-              ))}
+              {weatherData && renderWeatherCards(weatherData)}
             </div>
           </>)}
       </Suspense>

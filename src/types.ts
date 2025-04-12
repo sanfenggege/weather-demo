@@ -12,3 +12,10 @@ export interface ILocationData {
   adm2: string; // 城市名
   adm1: string; // 省份名
 }
+
+
+export interface IWeatherIconProps {
+  iconCode: string;
+  altText: string;
+  className?: string;
+}
